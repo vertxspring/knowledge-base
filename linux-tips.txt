@@ -1,0 +1,54 @@
+Linux:
+
+Commands:
+
+pwd - present working dir
+
+cd (no args) - change dir to /root
+cd / - change dir to /
+
+ls - list contents of pwd
+
+mkdir <name> - make dir
+
+rmdir <name> - remove dir that is empty
+
+rm <name> - delete file
+
+touch <name> - create new file
+
+man and help - manual and help
+
+cp <src> <dest> - copy files
+
+mv <old> <new> - move files
+
+locate -i <regex>- locate file. i indicates case insensitive
+
+echo "text text text" >> file.txt - output content into a file
+
+cat <name> - display contents of a file
+
+nano, vi, jed - text editors. jed is for html
+
+sudo - super user do
+
+df — Use the df command to see the available disk space in each of the partitions in your system
+
+du <file/folder name> or ls -lah - show file sizes of a doc
+
+tar — Use tar to work with tarballs (or files compressed in a tarball archive) in the Linux command line. It has a long list of uses. It can be used to compress and uncompress different types of tar archives like .tar, .tar.gz, .tar.bz2,etc. It works on the basis of the arguments given to it. For example, "tar -cvf" for creating a .tar archive, -xvf to untar a tar archive, -tvf to list the contents of the archive, etc. Since it is a wide topic, here are some examples of tar commands.
+
+ zip, unzip — Use zip to compress files into a zip archive, and unzip to extract files from a zip archive.
+
+apt-get — Use apt to work with packages in the Linux command line. Use apt-get to install packages. This requires root privileges, so use the sudo command with it. For example, if you want to install the text editor jed (as I mentioned earlier), we can type in the command “sudo apt-get install jed”. Similarly, any packages can be installed like this. It is good to update your repository each time you try to install a new package. You can do that by typing “sudo apt-get update”. You can upgrade the system by typing “sudo apt-get upgrade”. We can also upgrade the distro by typing “sudo apt-get dist-upgrade”. The command “apt-cache search” is used to search for a package. If you want to search for one, you can type in “apt-cache search jed”(this doesn't require root).
+
+chmod — Use chmod to make a file executable and to change the permissions granted to it in Linux. Imagine you have a python code named numbers.py in your computer. You'll need to run “python numbers.py” every time you need to run it. Instead of that, when you make it executable, you'll just need to run “numbers.py” in the terminal to run the file. To make a file executable, you can use the command “chmod +x numbers.py” in this case. You can use “chmod 755 numbers.py” to give it root permissions or “sudo chmod +x numbers.py” for root executable. Here is some more information about the chmod command.
+
+hostname — Use hostname to know your name in your host or network. Basically, it displays your hostname and IP address. Just typing “hostname” gives the output. Typing in “hostname -I” gives you your IP address in your network.
+
+You can use the clear command to clear the terminal if it gets filled up with too many commands.
+TAB can be used to fill up in terminal. For example, You just need to type “cd Doc” and then TAB and the terminal fills the rest up and makes it “cd Documents”.
+Ctrl+C can be used to stop any command in terminal safely. If it doesn't stop with that, then Ctrl+Z can be used to force stop it.
+You can exit from the terminal by using the exit command.
+You can power off or reboot the computer by using the command sudo halt and sudo reboot.
