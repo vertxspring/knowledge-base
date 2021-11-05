@@ -1,0 +1,247 @@
+Kafka:
+Apache Kafka is a community distributed event streaming platform capable of handling trillions of events a day. Initially conceived as a messaging queue, Kafka is based on an abstraction of a distributed commit log. 
+
+What are Events?
+An event is any type of action, incident, or change that's identified or recorded by software or applications. For example, a payment, a website click, or a temperature reading, along with a description of what happened.
+In other words, an event is a combination of notification—the element of when-ness that can be used to trigger some other activity—and state. That state is usually fairly small, say less than a megabyte or so, and is normally represented in some structured format, say in JSON or an object serialized with Apache Avro™ or Protocol Buffers.
+
+Kafka and Events
+Kafka is based on the abstraction of a distributed commit log. By splitting a log into partitions, Kafka is able to scale-out systems. As such, Kafka models events as key/value pairs. Internally, keys and values are just sequences of bytes, but externally in your programming language of choice, they are often structured objects represented in your language’s type system. Kafka famously calls the translation between language types and internal bytes serialization and deserialization. The serialized format is usually JSON, JSON Schema, Avro, or Protobuf.
+Values are typically the serialized representation of an application domain object or some form of raw message input, like the output of a sensor.
+Keys can also be complex domain objects but are often primitive types like strings or integers. The key part of a Kafka event is not necessarily a unique identifier for the event, like the primary key of a row in a relational database would be. It is more likely the identifier of some entity in the system, like a user, order, or a particular connected device.
+
+Kafka uses:
+Log aggregation, metrics and monitoring, data integration, publish-subscribe messaging, stream processing
+
+
+
+
+Concepts:
+..............
+
+Topic:
+Kafka topics are the categories used to organize messages. Each topic has a name that is unique across the entire Kafka cluster. Messages are sent to and read from specific topics. In other words, producers write data to topics, and consumers read data from topics. Kafka topics are multi-subscriber.
+
+Partitioning:
+Partitioning takes the single topic log and breaks it into multiple logs, each of which can live on a separate node in the Kafka cluster. This way, the work of storing messages, writing new messages, and processing existing messages can be split among many nodes in the cluster.
+Partitioning is the smallest unit of parallelism and how you scale kafka.
+Having broken a topic up into partitions, we need a way of deciding which messages to write to which partitions. Typically, if a message has no key, subsequent messages will be distributed round-robin among all the topic’s partitions. In this case, all partitions get an even share of the data, but we don’t preserve any kind of ordering of the input messages. If the message does have a key, then the destination partition will be computed from a hash of the key. This allows Kafka to guarantee that messages having the same key always land in the same partition, and therefore are always in order.
+For example, if you are producing events that are all associated with the same customer, using the customer ID as the key guarantees that all of the events from a given customer will always arrive in order. This creates the possibility that a very active key will create a larger and more active partition, but this risk is small in practice and is manageable when it presents itself. It is often worth it in order to preserve the ordering of keys.
+
+Kafka Brokers:
+From a physical infrastructure standpoint, Kafka is composed of a network of machines called brokers. In a contemporary deployment, these may not be separate physical servers but containers running on pods running on virtualized servers running on actual processors in a physical datacenter somewhere. However they are deployed, they are independent machines each running the Kafka broker process. Each broker hosts some set of partitions and handles incoming requests to write new events to those partitions or read events from them. Brokers also handle replication of partitions between each other.
+
+Replication
+It would not do if we stored each partition on only one broker. Whether brokers are bare metal servers or managed containers, they and their underlying storage are susceptible to failure, so we need to copy partition data to several other brokers to keep it safe. Those copies are called follower replica, whereas the main partition is called the leader replica. When you produce data to the leader—in general, reading and writing are done to the leader—the leader and the followers work together to replicate those new writes to the followers.
+
+
+...................
+
+Serializer/de-serializer code: 
+
+public class CustomSerializer implements Serializer<CustomObject> {
+
+	@Override
+	public void configure(Map<String, ?> configs, boolean isKey) {
+
+	}
+
+	@Override
+	public byte[] serialize(String topic, CustomObject data) {
+		byte[] retVal = null;
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			retVal = objectMapper.writeValueAsString(data).getBytes();
+		} catch (Exception exception) {
+			System.out.println("Error in serializing object" + data);
+		}
+		return retVal;
+	}
+
+	@Override
+	public void close() {
+
+	}
+
+}
+
+public class CustomDeserializer implements Deserializer<CustomObject> {
+	@Override
+	public void configure(Map<String, ?> configs, boolean isKey) {
+	}
+
+	@Override
+	public CustomObject deserialize(String topic, byte[] data) {
+		ObjectMapper mapper = new ObjectMapper();
+		CustomObject object = null;
+		try {
+			object = mapper.readValue(data, CustomObject.class);
+		} catch (Exception exception) {
+			System.out.println("Error in deserializing bytes " + exception);
+		}
+		return object;
+	}
+
+	@Override
+	public void close() {
+	}
+}
+
+
+Producer code:
+	
+	public static Producer<Long, CustomObject> createProducer() {
+		Properties props = new Properties();
+		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, IKafkaConstants.KAFKA_BROKERS);
+		props.put(ProducerConfig.CLIENT_ID_CONFIG, IKafkaConstants.CLIENT_ID);
+		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getName()); //SPECIFY SERIALIZER FOR KEY. APPEARS TO BE MANDATORY FOR PRODUCER
+		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, CustomSerializer.class); //SPECIFY SERIALIZER FOR VALUE. APPEARS TO BE MANDATORY FOR PRODUCER
+		return new KafkaProducer<>(props);
+	}
+
+static void runProducer() {
+		Producer<Long, CustomObject> producer = ProducerCreator.createProducer();
+
+		for (int index = 0; index < IKafkaConstants.MESSAGE_COUNT; index++) {
+			final ProducerRecord<Long, CustomObject> record = new ProducerRecord<Long, CustomObject>(IKafkaConstants.TOPIC_NAME,4l,
+					"This is record " + index);
+			try {
+				RecordMetadata metadata = producer.send(record).get();
+				System.out.println("Record sent with key " + index + " to partition " + metadata.partition()
+						+ " with offset " + metadata.offset());
+			} catch (ExecutionException e) {
+				System.out.println("Error in sending record");
+				System.out.println(e);
+			} catch (InterruptedException e) {
+				System.out.println("Error in sending record");
+				System.out.println(e);
+			}
+		}
+	}
+
+
+Consumer code:
+
+	public static Consumer<Long, String> createConsumer() {
+		final Properties props = new Properties();
+		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, IKafkaConstants.KAFKA_BROKERS);
+		props.put(ConsumerConfig.GROUP_ID_CONFIG, IKafkaConstants.GROUP_ID_CONFIG);
+		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
+		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+		props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, IKafkaConstants.MAX_POLL_RECORDS);
+		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, IKafkaConstants.OFFSET_RESET_EARLIER);
+
+		final Consumer<Long, String> consumer = new KafkaConsumer<>(props);
+		consumer.subscribe(Collections.singletonList(IKafkaConstants.TOPIC_NAME));
+		return consumer;
+	}
+
+	static void runConsumer() {
+		Consumer<Long, Payment> consumer = ConsumerCreator.createConsumer();
+
+		int noMessageToFetch = 0;
+
+		while (true) {
+			final ConsumerRecords<Long, String> consumerRecords = consumer.poll(1000);
+			if (consumerRecords.count() == 0) {
+				noMessageToFetch++;
+				if (noMessageToFetch > IKafkaConstants.MAX_NO_MESSAGE_FOUND_COUNT)
+					break;
+				else
+					continue;
+			}
+
+			consumerRecords.forEach(record -> {
+				System.out.println("Record Key " + record.key());
+				System.out.println("Record value " + record.value());
+				System.out.println("Record partition " + record.partition());
+				System.out.println("Record offset " + record.offset());
+			});
+			consumer.commitAsync();
+		}
+		consumer.close();
+	}
+
+
+Custom partitioner code:
+
+
+public class CustomPartitioner implements Partitioner{
+
+	private static final int PARTITION_COUNT=50;
+	
+	@Override
+	public void configure(Map<String, ?> configs) {
+		
+	}
+
+	@Override
+	public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
+		Integer keyInt=Integer.parseInt(key.toString());
+		return keyInt % PARTITION_COUNT;
+	}
+
+	@Override
+	public void close() {
+		
+	}
+
+	
+}
+
+
+Tool to view kafka data: Offset Explorer
+
+............................
+
+How is Kafka deployed?
+Multinode example:
+
+version: '2'
+services:
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+
+  zookeeper-2:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 32181:2181
+  
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  kafka-2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+    ports:
+      - 39092:39092
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:39092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
