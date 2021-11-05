@@ -37,6 +37,7 @@ It would not do if we stored each partition on only one broker. Whether brokers 
 
 ...................
 
+
 Serializer/de-serializer code: 
 
 public class CustomSerializer implements Serializer<CustomObject> {
@@ -164,6 +165,9 @@ Consumer code:
 	}
 
 
+Consumers can also be written as their own methods with a @KafkaListener annotation. Multiple consumers with same consumer group id will act as a queue i.e only one of them will consume each message.
+
+
 Custom partitioner code:
 
 
@@ -245,3 +249,42 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+
+
+ Why Schema Registry?
+Kafka, at its core, only transfers data in byte format. There is no data verification that’s being done at the Kafka cluster level. In fact, Kafka doesn’t even know what kind of data it is sending or receiving; whether it is a string or integer.
+Due to the decoupled nature of Kafka, producers and consumers do not communicate with each other directly, but rather information transfer happens via Kafka topic. At the same time, the consumer still needs to know the type of data the producer is sending in order to deserialize it. Imagine if the producer starts sending bad data to Kafka or if the data type of your data gets changed. Your downstream consumers will start breaking. We need a way to have a common data type that must be agreed upon. That’s where Schema Registry comes into the picture. It is an application that resides outside of your Kafka cluster and handles the distribution of schemas to the producer and consumer by storing a copy of schema in its local cache. With the schema registry in place, the producer, before sending the data to Kafka, talks to the schema registry first and checks if the schema is available. If it doesn’t find the schema then it registers and caches it in the schema registry. Once the producer gets the schema, it will serialize the data with the schema and send it to Kafka in binary format prepended with a unique schema ID. When the consumer processes this message, it will communicate with the schema registry using the schema ID it got from the producer and deserialize it using the same schema. If there is a schema mismatch, the schema registry will throw an error letting the producer know that it’s breaking the schema agreement.
+
+Avro schema example:
+
+{
+  "type" : "record",
+  "name" : "User",
+  "namespace" : "com.example.models.avro",
+  "fields" : [ 
+   {"name" : "userID", "type" : "string", "doc" : "User ID of a web app"}, 
+   {"name" : "customerName", "type" : "string", "doc" : "Customer Name", "default": "Test User"} 
+  ]
+}
+
+
+
+Example config with Avro schema:
+
+bootstrap.servers=<broker ip 1>:9092,<broker ip 2>:9092,<broker ip 3>:9092
+schema.registry.url=https://ickafkaschema:<schema-registry-password>@kafka-schema.<assigned-hosted-zone-id>.cnodes.io:8085
+basic.auth.credentials.source=URL
+key.serializer=io.confluent.kafka.serializers.KafkaAvroSerializer
+value.serializer=io.confluent.kafka.serializers.KafkaAvroSerializer
+ssl.enabled.protocols=TLSv1.2,TLSv1.1,TLSv1
+ssl.truststore.location=truststore.jks
+ssl.truststore.password=instaclustr
+ssl.protocol=TLS
+security.protocol=SASL_SSL
+sasl.mechanism=SCRAM-SHA-256
+sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required
+   username="ickafka"
+   password="<password>";
+
+Looks like we don't need to use serializer/deserializer if we use this
