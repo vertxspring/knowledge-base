@@ -1,0 +1,125 @@
+Docker:
+Docker is a software platform for building applications based on containers—small and lightweight execution environments that make shared use of the operating system kernel but otherwise run in isolation from one another. 
+
+Images -
+A Docker image is a read-only template that contains a set of instructions for creating a container that can run on the Docker platform. It provides a convenient way to package up applications and preconfigured server environments, which you can use for your own private use or share publicly with other Docker users. Docker images are also the starting point for anyone using Docker for the first time.
+
+image ls
+image rm <name>
+image tag <currentName> <newName>
+image prune
+image history <name>   (to see image layers)
+build -t <name>
+
+The following can 3 be run in shell or exec mode:
+RUN - used as image build step. Usually run in shell mode.
+CMD - used to run commands. Overriden by docker run cmd if provided. Usually run in exec mode.
+ENTRYPOINT - same as above but not overriden. Usually run in exec mode. 
+
+shell mode: command arg
+exec mode: execp[cmd, arg]
+
+
+Example image build file:
+# syntax=docker/dockerfile:1
+FROM node:12-alpine
+WORKDIR /app
+COPY . .
+RUN yarn install --production
+CMD ["node", "src/index.js"]
+
+Optimized build file:
+ # syntax=docker/dockerfile:1
+ FROM node:12-alpine
+ WORKDIR /app
+ COPY package.json yarn.lock ./
+ RUN yarn install --production
+ COPY . .
+ CMD ["node", "src/index.js"]
+
+node_modules is added to .dockerIgnore file so that it doesn't get copied again after 'yarn install'. This also means that since stages are cached, 'yarn install' doesn't have to happen again unless package.json changes or yarn.lock.
+
+Multistage build:
+# syntax=docker/dockerfile:1
+FROM maven AS build
+WORKDIR /app
+COPY . .
+RUN mvn package
+
+FROM tomcat
+COPY --from=build /app/target/file.war /usr/local/tomcat/webapps\
+
+In this example, we use one stage (called build) to perform the actual Java build using Maven. In the second stage (starting at FROM tomcat), we copy in files from the build stage. The final image is only the last stage being created (which can be overridden using the --target flag).
+
+.............................
+
+
+Containers -
+What is Container ? – Docker Container is a standardized unit which can be created on the fly to deploy a particular application or environment. It could be an Ubuntu container, CentOs container, etc. to full-fill the requirement from an operating system point of view. Also, it could be an application oriented container like Mongo container or a Tomcat container etc.
+container ls
+container rm -f
+container stop
+run --it -d -p 3000:3000
+rm -f $(ps -aq)   (removes all containers, doesnt work in cmd prompt. -f = force. -a = all. -q = quiet)
+
+Volumes - 
+volume create <name>
+volume inspect <name>
+
+Named and bind mounts. Named volumes copy container contents to local on start up. Bind volumes don't. Named volumes are mostly used for persisting data while bind volumes are used for providing additional data to containers. Named volume location in local host
+is determined by docker while bind mount can be customized by the user.
+
+Network:
+All containers in same network can communicate with each other. If not, they cannot.
+network create <name>
+network connect <networkName> <containerName>
+network disconnect <networkName> <containerName>
+
+
+Exec:
+docker exec -it <containerId> mysql -u root -p
+
+.............
+
+Examples: 
+
+docker run -d --network todo-app --network-alias mysql -v todo-mysql-data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=secret -e MYSQL_DATABASE=todo mysql:5.7
+docker run [options] 																														  <imageName>
+
+
+Docker compose:
+Name becomes the network alias.
+Example docker compose yaml:
+version: "3.7"
+
+services:
+  app:
+    image: node:12-alpine
+    command: sh -c "yarn install && yarn run dev"
+    ports:
+      - 3000:3000
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DB: todos
+
+  mysql:
+    image: mysql:5.7
+    volumes:
+      - todo-mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: todos
+
+volumes:
+  todo-mysql-data:
+filtering logs by app:
+  docker-compose logs -f <appName> 
+
+  Docker scan:
+  docker scan <imageName>
+  Helps to scan vulnerabilities. Need login. cmd: docker login
