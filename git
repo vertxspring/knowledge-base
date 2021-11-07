@@ -1,0 +1,37 @@
+Git:
+
+Git is a free and open source distributed version control system designed to handle everything from small to very large projects with speed and efficiency.
+
+Creating a new git locally: 
+git clone <url>
+git init
+
+Adding to staging:
+git add .
+
+Commiting:
+git commit
+
+Setting remote:
+git remote add <remoteName> <url>
+git push <remoteName>
+
+
+Workflow:
+
+1. git init
+2. git add .
+3. git commit -m "msg"
+4. Create repository in github and copy url
+5. Set up personal access token in github account
+6. git remote add <remoteName> <remoteUrl>
+7. git push <remoteName> <branch>
+OR
+7. 	a. git --set-upstream <remoteName> <branch> 
+	b. git push
+
+..............
+
+Base folder: 
+
+C:\Users\HOME\Desktop\knowledge-base>git add . & git commit -m "added more stuff" & git push

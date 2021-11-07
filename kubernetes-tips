@@ -10,7 +10,27 @@ Cloud:
 Local:
 1. Minikube (Single node)
 2. Docker desktop (Single node)
-3. Docker in Docker (experimental)
+3. kind (kubernetes in docker)
 
 Bare metal:
 Not recommended for beginners
+
+
+Kubernetes client:
+kubectl client
+
+
+..................................
+
+GKE:
+1. Make Google Cloud account with billing enabled
+2. Download gcloud SDK cli
+3. gcloud init
+4. It asks for login info and logs you in
+5. Select ('gcloud config set project <project-name>')or create a new project using 'gcloud projects create <unique-proj-name>'
+6. gcloud config set compute/zone us-west1-a (key is compute/zone with compute being the section name and zone being the property. Properties under the section 'core' don't need to specify the section as evident in the set project example above. Value is us-west1-a.) 
+7. Enable kubernetes api for this specific project in the Google Cloud UI
+8. Create kubernetes cluster using 'gcloud container cluster create <name>' which also downloads the config to your <home>/.kube
+9. If config is lost, you can download using 'gcloud container cluster get-credentials <name>'
+10. When you download kubectl (client) and type 'kubectl version', it should list the version of both client and server
+
