@@ -1,0 +1,16 @@
+Kubernetes:
+
+Ways of starting a kubernetes cluster for learning:
+
+Cloud: 
+1. GKE - Google Kubernetes Engine
+2. AKS - Azure Kubernetes Service
+3. EKS - Elastic Kubernetes Service
+
+Local:
+1. Minikube (Single node)
+2. Docker desktop (Single node)
+3. Docker in Docker (experimental)
+
+Bare metal:
+Not recommended for beginners
