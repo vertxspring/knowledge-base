@@ -132,3 +132,16 @@ filtering logs by app:
   docker system prune - removes stopped containers, untagged images, unused cached layers
 
   docker-gc - garbage collection tool
+
+
+  Docker multi stage for java spring boot:
+
+FROM maven:3.5.2-jdk-9 AS build
+COPY src /usr/src/app/src
+COPY pom.xml /usr/src/app
+RUN mvn -f /usr/src/app/pom.xml clean package
+
+FROM openjdk:11
+COPY --from=build /usr/src/app/target/inventory-1.0.0-SNAPSHOT.jar /usr/app/inventory-1.0.0-SNAPSHOT.jar
+EXPOSE 8081
+ENTRYPOINT ["java","-jar","/usr/app/inventory-1.0.0-SNAPSHOT.jar"]

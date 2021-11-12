@@ -22,7 +22,7 @@ kubectl client
 
 ..................................
 
-GKE:
+GKE Cluster creation:
 1. Make Google Cloud account with billing enabled
 2. Download gcloud SDK cli
 3. gcloud init
@@ -31,6 +31,67 @@ GKE:
 6. gcloud config set compute/zone us-west1-a (key is compute/zone with compute being the section name and zone being the property. Properties under the section 'core' don't need to specify the section as evident in the set project example above. Value is us-west1-a.) 
 7. Enable kubernetes api for this specific project in the Google Cloud UI
 8. Create kubernetes cluster using 'gcloud container cluster create <name>' which also downloads the config to your <home>/.kube
-9. If config is lost, you can download using 'gcloud container cluster get-credentials <name>'
+9. If config is lost or cluster was configured in UI, you can download the config locally using 'gcloud container cluster get-credentials <name>'
 10. When you download kubectl (client) and type 'kubectl version', it should list the version of both client and server
 
+....................
+
+
+kubectl get componentstatuses
+
+NAME                 STATUS    MESSAGE             ERROR
+controller-manager   Healthy   ok
+scheduler            Healthy   ok
+etcd-1               Healthy   {"health":"true"}
+etcd-0               Healthy   {"health":"true"}
+
+kubectl get nodes
+NAME                                         STATUS   ROLES    AGE   VERSION
+gke-abc-cluster-default-pool-cccdba79-3md7   Ready    <none>   60m   v1.20.10-gke.1600
+gke-abc-cluster-default-pool-cccdba79-d4jm   Ready    <none>   60m   v1.20.10-gke.1600
+gke-abc-cluster-default-pool-cccdba79-tldp   Ready    <none>   60m   v1.20.10-gke.1600
+
+kubectl describe nodes <name>
+Gives info about the node such as RAM etc as well as info about the pods inside. From this output you can see the Pods on the node (e.g., the kube-dns Pod that supplies DNS services for the cluster), the CPU and memory that each Pod is requesting
+from the node, as well as the total resources requested. It’s worth noting here that Kubernetes tracks both the requests and upper limits for resources for each Pod that runs on a machine
+
+kubectl api-resources [--namespace=xyz]
+Lists all resource types and their short forms so they can be fetched with a 'kubectl get <name/shortform>' eg: get pods, get deployments, get nodes. Namespace can be specificed for some of the resources. kube-system namespace is the namespace of many resources that come with kubernetes itself eg: kubectl get pods --namespace=kube-system. Some resources are not linked with any name space eg: get nodes. This is all shown in the table when the above command 'kubectl api-resources' is executed.
+
+kubectl get <resourceType> [objname] 
+Lists the objects/specific object of the resource type if found in the namespace
+
+Kubernetes Proxy
+The Kubernetes proxy is responsible for routing network traffic to load-balanced
+services in the Kubernetes cluster. To do its job, the proxy must be present on every
+node in the cluster. Kubernetes has an API object named DaemonSet, which you will
+learn about later in the book, that is used in many clusters to accomplish this. If your
+cluster runs the Kubernetes proxy with a DaemonSet, you can see the proxies by
+running:
+
+Kubernetes DNS
+Kubernetes also runs a DNS server, which provides naming and discovery for the
+services that are defined in the cluster. This DNS server also runs as a replicated service
+on the cluster.
+
+
+The Dashboard UI is not deployed by default. To deploy it, run the following command:
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.4.0/aio/deploy/recommended.yaml
+
+kubectl proxy
+Starts a server on localhost for UI after following the above step
+
+Namespaces
+Kubernetes uses namespaces to organize objects in the cluster. You can think of each namespace as a folder that holds a set of objects. By default, the kubectl commandline tool interacts with the default namespace. If you want to use a different namespace, you can pass kubectl the --namespace flag. For example, kubectl --namespace=mystuff references objects in the mystuff namespace. If you want to interact with all namespaces—for example, to list all Pods in your cluster—you can pass the --all-namespaces flag.
+
+Contexts
+If you want to change the default namespace more permanently, you can use a context. This gets recorded in a kubectl configuration file, usually located at $HOME/.kube/config. This configuration file also stores how to both find and authenticate to your cluster. For example, you can create a context with a different default namespace for your kubectl commands using: $ kubectl config set-context my-context --namespace=mystuff This creates a new context, but it doesn’t actually start using it yet. To use this newly created context, you can run: $ kubectl config use-context my-context
+
+
+
+Objects in the Kubernetes API are represented as JSON or YAML files. These files are either returned by the server in response to a query or posted to the server as part of an API request. You can use these YAML or JSON files to create, update, or delete objects on the Kubernetes server. Let’s assume that you have a simple object stored in obj.yaml. You can use kubectl to create this object in Kubernetes by running:$ kubectl apply -f obj.yaml. Notice that you don’t need to specify the resource type of the object; it’s obtained from the object file itself.
+If you feel like making interactive edits instead of editing a local file, you can instead use the edit command, which will download the latest object state and then launch an editor that contains the definition: $ kubectl edit <resource-name> <obj-name>
+
+Deleting:
+kubectl delete -f obj.yaml
+kubectl delete <resource-name> <obj-name>
