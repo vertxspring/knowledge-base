@@ -65,3 +65,8 @@ history 3 - displays last 3 commands typed in shell. Can be used without a numbe
 
 https://www.crio.do/bytes/linux-basics-one/?utm_source=crio-blog&utm_medium=lc
 https://www.crio.do/bytes/linux-basics-two/?utm_source=crio-blog&utm_medium=lc
+
+tar -zxvf logstash-1.5.0.tar.gz
+
+Copy folder: cp a/b/ c/d
+Copy contents of folder only without directory: cp a/b/. c/d 

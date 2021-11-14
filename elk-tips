@@ -1,0 +1,14 @@
+ELK stack:
+
+Elastic Search - text search engine, runs on port 9092 by default
+Logstash - log aggregator
+Kibana - visualizer (UI)
+
+
+app1 - logstash shipper >>>
+app2 - logstash shipper >>> logstash indexer >>>> elastic search >>>> kibana
+app3 - logstash shipper >>>
+
+docker run -d -p 9092:9092 --name es1 <elasticSearchImage>
+docker exec -it es1 "/bin/bash"
+The config folder has two files, namely elasticsearch.yml and logging.yml. The former will be used to specify configuration properties of different Elasticsearch modules, such as network address, paths, and so on, while the latter will specify logging-related configurations

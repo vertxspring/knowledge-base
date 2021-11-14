@@ -145,3 +145,20 @@ FROM openjdk:11
 COPY --from=build /usr/src/app/target/inventory-1.0.0-SNAPSHOT.jar /usr/app/inventory-1.0.0-SNAPSHOT.jar
 EXPOSE 8081
 ENTRYPOINT ["java","-jar","/usr/app/inventory-1.0.0-SNAPSHOT.jar"]
+
+...........
+
+ENV is for future running containers. ARG for building your Docker image.
+
+You can’t change ENV directly during the build!
+Build arguments can be set to a default value inside of a Dockerfile:
+
+ARG VAR_NAME 5
+but also changed by providing a --build-arg VAR_NAME=6 argument when you build your image. In a similar way, you can specify default values for ENV variables:
+
+ENV VAR_NAME_2 6
+
+docker exec -it app1 "/bin/bash"
+
+To push images to registry, you need to tag them with your username first:
+docker tag image_id yourhubusername/reponame:tag
